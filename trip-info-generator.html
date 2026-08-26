@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Trip Info Generator</title>
+<!-- iOS "Add to Home Screen" support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trip Info">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=">
+<style>
+  :root{
+    --bg:#eef2f5;
+    --panel:#ffffff;
+    --ink:#1c2b3a;
+    --muted:#6b7c8c;
+    --line:#dde4ea;
+    --accent:#0f6e9e;
+    --accent-dark:#0a4f74;
+    --paper:#eaf6fb;
+    --red:#c31e2c;
+    --blue:#123f8f;
+  }
+  *{box-sizing:border-box;-webkit-user-select:auto;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Trebuchet MS",Segoe UI,Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;}
+  body{padding:16px;padding-bottom:60px;}
+  .wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+  h1{font-size:20px;margin:4px 0 0;color:var(--accent-dark);}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 4px;}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start;}
+  @media (max-width:880px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .panel h2{font-size:14px;margin:0 0 10px;color:var(--accent-dark);display:flex;align-items:center;gap:8px;}
+  .panel h2 .tag{background:var(--paper);color:var(--accent-dark);font-size:11px;padding:2px 8px;border-radius:20px;}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;}
+  label:first-child{margin-top:0;}
+  input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:9px;
+    font-size:15px;background:#fbfdfe;color:var(--ink);font-family:inherit;}
+  textarea{resize:vertical;min-height:44px;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  input[readonly]{background:#eef8ff;color:var(--blue);font-weight:700;border-color:#bcdcf2;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+  @media (max-width:520px){.row3,.row4{grid-template-columns:1fr 1fr;}}
+  button{cursor:pointer;border:none;border-radius:9px;font-size:14px;padding:10px 14px;font-weight:600;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:active{background:var(--accent-dark);}
+  .btn-ghost{background:var(--paper);color:var(--accent-dark);}
+  .btn-danger{background:#fdeceb;color:var(--red);}
+  .btn-sm{padding:6px 10px;font-size:12px;border-radius:7px;}
+  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .empty{color:var(--muted);font-size:12px;padding:10px 0;text-align:center;}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px;}
+  .badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:20px;font-weight:700;}
+  .badge-auto{background:#e4f3ff;color:var(--blue);}
+  .badge-na{background:#fdeceb;color:var(--red);}
+  .fleetSummary{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .chip{background:var(--paper);color:var(--accent-dark);font-size:11px;padding:4px 9px;border-radius:20px;font-weight:600;}
+  details{margin-top:14px;border-top:1px solid var(--line);padding-top:10px;}
+  summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--accent-dark);}
+
+  /* ---- generated card (replica) ---- */
+  .cardwrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .cardwrap .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .doc{background:var(--paper);border:2px solid var(--red);border-radius:4px;max-width:520px;margin:0 auto 18px;
+    font-family:Arial,Helvetica,sans-serif;}
+  .doc .brand{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 4px;}
+  .doc .brand .logo{display:flex;align-items:center;gap:6px;}
+  .doc .brand .logo svg{flex-shrink:0;}
+  .doc .brand .logo .word{font-weight:900;color:var(--red);font-size:21px;letter-spacing:.3px;font-style:italic;}
+  .doc .brand .logo .word span{font-style:normal;font-size:8px;display:block;letter-spacing:3px;color:#333;font-weight:700;margin-top:-2px;}
+  .doc .brand .co{font-size:9px;color:var(--red);font-weight:700;text-align:right;max-width:150px;}
+  .doc .title{text-align:center;color:var(--red);font-weight:900;font-size:19px;letter-spacing:1px;
+    border-top:2px solid var(--red);padding:5px 0 3px;}
+  .doc table{width:100%;border-collapse:collapse;}
+  .doc table td{border:1px solid var(--red);padding:6px 10px;font-size:13px;}
+  .doc table td.k{width:46%;color:var(--red);font-weight:700;background:#fff;}
+  .doc table td.v{color:var(--blue);font-weight:800;text-align:center;letter-spacing:.5px;}
+  .doc .foot{display:flex;justify-content:space-between;font-size:9px;color:#444;padding:4px 10px 8px;}
+  .doc2{border-top:2px solid var(--red);}
+  .doc2 .hdr td{border:1px solid var(--red);padding:6px 10px;font-size:13px;}
+  .doc2 .hdr td.k{color:var(--red);font-weight:700;width:32%;background:#fff;}
+  .doc2 .hdr td.v{color:var(--blue);font-weight:800;text-align:center;}
+  .plane{padding:14px 10px 4px;}
+  .tanks{display:flex;justify-content:space-between;align-items:flex-end;padding:0 6px;margin-top:-18px;}
+  .tank{border:2px solid var(--red);border-radius:3px;background:#fff;text-align:center;padding:8px 4px;width:31%;}
+  .tank .val{color:var(--blue);font-weight:900;font-size:18px;}
+  .tank .lbl{color:var(--red);font-size:9px;font-weight:700;margin-top:2px;}
+  .blockfuel{border:2px solid var(--red);border-radius:3px;background:#fff;text-align:center;
+    margin:12px 30px 4px;padding:8px;}
+  .blockfuel .val{color:var(--blue);font-weight:900;font-size:20px;}
+  .blockfuel .lbl{color:var(--red);font-size:10px;font-weight:700;margin-top:2px;letter-spacing:1px;}
+
+  @media print{
+    body{background:#fff;padding:0;}
+    .grid,.toolbar,h1,.sub{display:none !important;}
+    .cardwrap{border:none;padding:0;}
+    .doc{max-width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>Trip Info Generator</h1>
+    <p class="sub">Pick Registration, Pantry Code, Cockpit Crew and Cabin Attendant No — DOW/DOI fill in automatically. Add to Home Screen for an app-like experience on iOS.</p>
+  </div>
+
+  <div class="grid">
+    <!-- Fleet DB panel -->
+    <div class="panel">
+      <h2>Fleet Database <span class="tag" id="dbCount">0 registrations</span></h2>
+      <div class="fleetSummary" id="fleetChips"></div>
+
+      <details>
+        <summary>Add / edit a DOW-DOI row</summary>
+        <label>Registration</label>
+        <input id="db_reg" placeholder="TC-XXX (new or existing)" style="text-transform:uppercase">
+        <div class="row2">
+          <div>
+            <label>Pantry Code</label>
+            <select id="db_pantry">
+              <option value="A">A — Intl. Two-way</option>
+              <option value="B">B — Intl. One-way</option>
+              <option value="E">E — Ferry Flight</option>
+            </select>
+          </div>
+          <div>
+            <label>Cockpit Crew No</label>
+            <select id="db_cockpit"><option>2</option><option>3</option><option>4</option></select>
+          </div>
+        </div>
+        <button class="btn-ghost btn-sm" style="margin-top:8px;" onclick="loadRowIntoEditor()">Load existing row</button>
+        <label>DOW values, Cabin Attendant 0→6 (comma separated)</label>
+        <textarea id="db_dow" placeholder="42665,42740,42815,42890,42965,43040,43115"></textarea>
+        <label>DOI values, Cabin Attendant 0→6 (comma separated)</label>
+        <textarea id="db_doi" placeholder="52.2,51.1,52.2,53.3,52.1,53.2,54.3"></textarea>
+        <div class="actions">
+          <button class="btn-primary btn-sm" onclick="saveRow()">Save row</button>
+          <button class="btn-danger btn-sm" onclick="deleteRow()">Delete row</button>
+        </div>
+        <p class="hint">A "row" is one Registration + Pantry Code + Cockpit Crew combination, holding 7 DOW/DOI values (one per Cabin Attendant Number, 0 through 6). Data is saved on this device and persists next time you open the app.</p>
+      </details>
+    </div>
+
+    <!-- Trip form panel -->
+    <div class="panel">
+      <h2>Flight Data</h2>
+      <div class="row3">
+        <div><label>Flight No</label><input id="f_flight" placeholder="CAI 5052" oninput="render()"></div>
+        <div><label>Registration</label><select id="f_reg" onchange="onKeyInput()"></select></div>
+        <div><label>Date</label><input id="f_date" type="date" oninput="render()"></div>
+      </div>
+      <div class="row2">
+        <div><label>From</label><input id="f_from" placeholder="LTAI" style="text-transform:uppercase" oninput="render()"></div>
+        <div><label>To</label><input id="f_to" placeholder="LOWI" style="text-transform:uppercase" oninput="render()"></div>
+      </div>
+
+      <div class="row3">
+        <div>
+          <label>Pantry Code</label>
+          <select id="f_pantry" onchange="onKeyInput()">
+            <option value="A">A</option><option value="B">B</option><option value="E">E</option>
+          </select>
+        </div>
+        <div>
+          <label>Cockpit Crew No</label>
+          <select id="f_cockpit" onchange="onKeyInput()"><option>2</option><option>3</option><option>4</option></select>
+        </div>
+        <div>
+          <label>Cabin Attendant No</label>
+          <select id="f_cabin" onchange="onKeyInput()">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>DOW (kg) <span class="badge badge-auto" id="dowBadge" style="display:none">AUTO</span></label>
+          <input id="f_dow" type="number" oninput="render()">
+        </div>
+        <div>
+          <label>DOI <span class="badge badge-auto" id="doiBadge" style="display:none">AUTO</span></label>
+          <input id="f_doi" type="number" step="0.1" oninput="render()">
+        </div>
+      </div>
+      <div class="actions" id="saveNewAcftBox" style="display:none;margin-top:0;margin-bottom:6px;">
+        <span class="badge badge-na">Not in database</span>
+        <button class="btn-ghost btn-sm" onclick="saveCurrentCell()">+ Save this value to database</button>
+      </div>
+
+      <div class="row2">
+        <div><label>Block Fuel (kg)</label><input id="f_block" type="number" oninput="render()"></div>
+        <div><label>Taxi Fuel (kg)</label><input id="f_taxi" type="number" oninput="render()"></div>
+      </div>
+      <div class="row2">
+        <div><label>T/O Fuel (kg) <span class="badge badge-auto">AUTO = Block − Taxi</span></label>
+          <input id="f_tofuel" readonly></div>
+        <div><label>Trip Fuel (kg)</label><input id="f_trip" type="number" oninput="render()"></div>
+      </div>
+
+      <label>MALTOW (kg)</label>
+      <input id="f_maltow" type="number" oninput="render()">
+      <div class="row2">
+        <div><label>EET (hh:mm)</label><input id="f_eet" placeholder="02:46" oninput="render()"></div>
+        <div><label>Endurance (hh:mm) <span class="badge badge-auto">AUTO</span></label>
+          <input id="f_end" readonly></div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Flaps</label>
+          <select id="f_flaps" onchange="render()">
+            <option value="5°">5°</option>
+            <option value="10°">10°</option>
+          </select>
+        </div>
+        <div><label>FKT (kg)</label><input id="f_fkt" type="number" value="0" oninput="render()"></div>
+      </div>
+      <label>Captain Name & Surname</label>
+      <input id="f_capt" placeholder="A.DERELI" style="text-transform:uppercase" oninput="render()">
+
+      <div class="actions">
+        <button class="btn-primary btn-sm" onclick="saveDraftNow(true)">💾 Save</button>
+        <span id="saveStatus" class="hint" style="margin-top:0;"></span>
+      </div>
+      <p class="hint">Your entries are also saved automatically a moment after you stop typing, so nothing is lost if you leave the app.</p>
+
+      <details>
+        <summary>Fuel & Endurance Settings</summary>
+        <label>Max fuel per wing tank (kg)</label>
+        <input id="set_wingcap" type="number" oninput="onSettingsChange()">
+        <div class="row2">
+          <div><label>NG (737-800) burn rate (kg/h)</label><input id="set_ngburn" type="number" oninput="onSettingsChange()"></div>
+          <div><label>MAX (737-8) burn rate (kg/h)</label><input id="set_maxburn" type="number" oninput="onSettingsChange()"></div>
+        </div>
+        <p class="hint">Endurance = T/O Fuel ÷ burn rate for the selected aircraft's type (NG or MAX, based on the Registration's fleet entry). Defaults are calibrated to a real Corendon 737-800 trip (9524 kg T/O fuel → 03:50). Adjust if your own figures differ.</p>
+      </details>
+
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="cardwrap">
+    <div class="toolbar">
+      <h2 style="margin:0;font-size:14px;color:var(--accent-dark);">Trip Info Output</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-primary btn-sm" onclick="shareOrPrint()">Print / Export PDF</button>
+      </div>
+    </div>
+
+    <div id="shareCapture" style="background:#fff;">
+    <div class="doc" id="doc1">
+      <div class="brand">
+        <div class="logo">
+          <svg width="26" height="26" viewBox="0 0 24 24">
+            <path fill="#c31e2c" d="M12 1l2.6 6.9L22 9l-5.5 4.9L18 22l-6-4.2L6 22l1.5-8.1L2 9l7.4-1.1z"/>
+          </svg>
+          <div class="word">corendon<span>AIRLINES</span></div>
+        </div>
+        <div class="co">TURİSTİK HAVA TAŞIMACILIK A.Ş.</div>
+      </div>
+      <div class="title">TRIP INFO</div>
+      <table>
+        <tr><td class="k">FLIGHT NO</td><td class="v" id="o_flight">-</td></tr>
+        <tr><td class="k">REGISTRATION</td><td class="v" id="o_reg">-</td></tr>
+        <tr><td class="k">FROM / TO</td><td class="v" id="o_fromto">-</td></tr>
+        <tr><td class="k">DATE</td><td class="v" id="o_date">-</td></tr>
+        <tr><td class="k">CREW VERSION</td><td class="v" id="o_crew">-</td></tr>
+        <tr><td class="k">PANTRY</td><td class="v" id="o_pantry">-</td></tr>
+        <tr><td class="k">DOW / DOI</td><td class="v" id="o_dowdoi">-</td></tr>
+        <tr><td class="k">BLOCK FUEL / TAXI FUEL</td><td class="v" id="o_blocktaxi">-</td></tr>
+        <tr><td class="k">T/O FUEL</td><td class="v" id="o_tofuel">-</td></tr>
+        <tr><td class="k">TRIP FUEL</td><td class="v" id="o_trip">-</td></tr>
+        <tr><td class="k">MALTOW</td><td class="v" id="o_maltow">-</td></tr>
+        <tr><td class="k">EET / ENDURANCE</td><td class="v" id="o_eetend">-</td></tr>
+        <tr><td class="k">FLAPS</td><td class="v" id="o_flaps">-</td></tr>
+        <tr><td class="k">FKT</td><td class="v" id="o_fkt">-</td></tr>
+        <tr><td class="k">CAPT. NAME & SURNAME</td><td class="v" id="o_capt">-</td></tr>
+      </table>
+      <div class="foot"><span>CA - FOP - TIN</span><span>All Weights in KGS</span><span>Rev. No/Date: 08/20 Aug 24</span></div>
+    </div>
+
+    <div class="doc doc2">
+      <table class="hdr">
+        <tr><td class="k">DATE: <span id="o2_date"></span></td><td class="k" style="text-align:center;">FLIGHT NO: <span class="v" id="o2_flight" style="color:var(--blue)"></span></td></tr>
+        <tr><td class="k">AIRPLANE REG</td><td class="v" id="o2_reg">-</td></tr>
+        <tr><td class="k">FROM / TO</td><td class="v" id="o2_fromto">-</td></tr>
+      </table>
+      <div class="plane">
+        <svg viewBox="0 0 300 130" width="100%" height="110">
+          <path d="M150 6 L156 40 L290 78 L290 90 L156 66 L152 118 L172 128 L172 132 L128 132 L128 128 L148 118 L144 66 L10 90 L10 78 L144 40 Z"
+                fill="#fff" stroke="#c31e2c" stroke-width="2"/>
+          <circle cx="95" cy="82" r="9" fill="#fff" stroke="#c31e2c" stroke-width="2"/>
+          <circle cx="95" cy="82" r="3.5" fill="#c31e2c"/>
+          <circle cx="205" cy="82" r="9" fill="#fff" stroke="#c31e2c" stroke-width="2"/>
+          <circle cx="205" cy="82" r="3.5" fill="#c31e2c"/>
+        </svg>
+        <div class="tanks">
+          <div class="tank"><div class="val" id="o_t2">-</div><div class="lbl">TANK 2</div></div>
+          <div class="tank"><div class="val" id="o_tc">-</div><div class="lbl">CENTER TANK</div></div>
+          <div class="tank"><div class="val" id="o_t1">-</div><div class="lbl">TANK 1</div></div>
+        </div>
+      </div>
+      <div class="blockfuel"><div class="val" id="o_block2">-</div><div class="lbl">BLOCK FUEL</div></div>
+      <div class="foot"><span>CA - FOP - TIN</span><span>Rev. No/Date: 08/20 Aug 24</span></div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- factory fleet data (from AHM 560 DOW/DOI tables) ----------
+const FLEET_DEFAULT = {
+"TC-MKB": {type:"B737-8 (MAX)", pantry:{
+  A:{2:{dow:[44987,45062,45137,45212,45287,45362,45437],doi:[44.8,43.6,44.7,45.8,44.7,45.8,46.9]},
+     3:{dow:[45072,45147,45222,45297,45372,45447,45522],doi:[43.4,42.2,43.3,44.4,43.2,44.3,45.4]},
+     4:null},
+  B:{2:{dow:[44912,44987,45062,45137,45212,45287,45362],doi:[44.5,43.4,44.5,45.6,44.4,45.5,46.6]},
+     3:{dow:[44997,45072,45147,45222,45297,45372,45447],doi:[43.1,41.9,43.0,44.1,43.0,44.1,45.2]},
+     4:null},
+  E:{2:{dow:[44687,44762,44837,44912,44987,45062,45137],doi:[43.5,42.4,43.5,44.6,43.4,44.5,45.6]},
+     3:{dow:[44772,44847,44922,44997,45072,45147,45222],doi:[42.1,40.9,42.0,43.1,42.0,43.1,44.2]},
+     4:null}
+}},
+"TC-COE": {type:"B737-800", pantry:{
+  A:{2:{dow:[42665,42740,42815,42890,42965,43040,43115],doi:[52.2,51.1,52.2,53.3,52.1,53.2,54.3]},
+     3:{dow:[42750,42825,42900,42975,43050,43125,43200],doi:[50.8,49.6,50.7,51.8,50.7,51.8,52.9]},
+     4:{dow:[42835,42910,42985,43060,43135,43210,43285],doi:[49.3,48.2,49.3,50.4,49.2,50.3,51.4]}},
+  B:{2:{dow:[42590,42665,42740,42815,42890,42965,43040],doi:[52.0,50.8,51.9,53.0,51.8,52.9,54.0]},
+     3:{dow:[42675,42750,42825,42900,42975,43050,43125],doi:[50.5,49.4,50.5,51.6,50.4,51.5,52.6]},
+     4:{dow:[42760,42835,42910,42985,43060,43135,43210],doi:[49.1,47.9,49.0,50.1,48.9,50.0,51.1]}},
+  E:{2:{dow:[42365,42440,42515,42590,42665,42740,42815],doi:[51.0,49.8,50.9,52.0,50.8,51.9,53.0]},
+     3:{dow:[42450,42525,42600,42675,42750,42825,42900],doi:[49.5,48.4,49.5,50.6,49.4,50.5,51.6]},
+     4:{dow:[42535,42610,42685,42760,42835,42910,42985],doi:[48.1,46.9,48.0,49.1,48.0,49.1,50.2]}}
+}},
+"TC-COH": {type:"B737-800", pantry:{
+  A:{2:{dow:[41814,41889,41964,42039,42114,42189,42264],doi:[53.4,52.3,53.4,54.5,53.3,54.4,55.5]},
+     3:{dow:[41899,41974,42049,42124,42199,42274,42349],doi:[52.0,50.8,51.9,53.0,51.9,53.0,54.0]},
+     4:{dow:[41984,42059,42134,42209,42284,42359,42434],doi:[50.5,49.4,50.5,51.6,50.4,51.5,52.6]}},
+  B:{2:{dow:[41739,41814,41889,41964,42039,42114,42189],doi:[53.1,52.0,53.1,54.2,53.0,54.1,55.2]},
+     3:{dow:[41824,41899,41974,42049,42124,42199,42274],doi:[51.7,50.5,51.6,52.7,51.6,52.7,53.8]},
+     4:{dow:[41909,41984,42059,42134,42209,42284,42359],doi:[50.3,49.1,50.2,51.3,50.1,51.2,52.3]}},
+  E:{2:{dow:[41514,41589,41664,41739,41814,41889,41964],doi:[52.2,51.0,52.1,53.2,52.0,53.1,54.2]},
+     3:{dow:[41599,41674,41749,41824,41899,41974,42049],doi:[50.7,49.6,50.7,51.8,50.6,51.7,52.8]},
+     4:{dow:[41684,41759,41834,41909,41984,42059,42134],doi:[49.3,48.1,49.2,50.3,49.1,50.2,51.3]}}
+}},
+"TC-CON": {type:"B737-800", pantry:{
+  A:{2:{dow:[42336,42411,42486,42561,42636,42711,42786],doi:[50.5,49.4,50.5,51.6,50.4,51.5,52.6]},
+     3:{dow:[42421,42496,42571,42646,42721,42796,42871],doi:[49.1,47.9,49.0,50.1,49.0,50.1,51.2]},
+     4:{dow:[42506,42581,42656,42731,42806,42881,42956],doi:[47.6,46.5,47.6,48.7,47.5,48.6,49.7]}},
+  B:{2:{dow:[42261,42336,42411,42486,42561,42636,42711],doi:[50.3,49.1,50.2,51.3,50.1,51.2,52.3]},
+     3:{dow:[42346,42421,42496,42571,42646,42721,42796],doi:[48.8,47.7,48.8,49.9,48.7,49.8,50.9]},
+     4:{dow:[42431,42506,42581,42656,42731,42806,42881],doi:[47.4,46.2,47.3,48.4,47.2,48.3,49.4]}},
+  E:{2:{dow:[42036,42111,42186,42261,42336,42411,42486],doi:[49.3,48.1,49.2,50.3,49.1,50.2,51.3]},
+     3:{dow:[42121,42196,42271,42346,42421,42496,42571],doi:[47.8,46.7,47.8,48.9,47.7,48.8,49.9]},
+     4:{dow:[42206,42281,42356,42431,42506,42581,42656],doi:[46.4,45.2,46.3,47.4,46.3,47.4,48.5]}}
+}},
+"TC-COR": {type:"B737-800", pantry:{
+  A:{2:{dow:[41760,41835,41910,41985,42060,42135,42210],doi:[50.2,49.0,50.1,51.2,50.1,51.2,52.3]},
+     3:{dow:[41845,41920,41995,42070,42145,42220,42295],doi:[48.7,47.6,48.7,49.8,48.6,49.7,50.8]},
+     4:{dow:[41930,42005,42080,42155,42230,42305,42380],doi:[47.3,46.1,47.2,48.3,47.2,48.3,49.4]}},
+  B:{2:{dow:[41685,41760,41835,41910,41985,42060,42135],doi:[49.9,48.7,49.8,50.9,49.8,50.9,52.0]},
+     3:{dow:[41770,41845,41920,41995,42070,42145,42220],doi:[48.5,47.3,48.4,49.5,48.3,49.4,50.5]},
+     4:{dow:[41855,41930,42005,42080,42155,42230,42305],doi:[47.0,45.9,47.0,48.1,46.9,48.0,49.1]}},
+  E:{2:{dow:[41460,41535,41610,41685,41760,41835,41910],doi:[48.9,47.8,48.9,50.0,48.8,49.9,51.0]},
+     3:{dow:[41545,41620,41695,41770,41845,41920,41995],doi:[47.5,46.3,47.4,48.5,47.4,48.5,49.6]},
+     4:{dow:[41630,41705,41780,41855,41930,42005,42080],doi:[46.0,44.9,46.0,47.1,45.9,47.0,48.1]}}
+}}
+};
+
+let FLEET = {};
+let wingCap = 3900;
+let ngBurn = 2485;   // kg/h, calibrated to a real 737-800 trip (9524kg T/O fuel -> 03:50)
+let maxBurn = 2137;  // kg/h, estimated ~14% more efficient than NG (adjust if you have real MAX data)
+let draftTimer = null;
+
+const FORM_FIELDS = ['f_flight','f_reg','f_date','f_from','f_to','f_pantry','f_cockpit','f_cabin',
+  'f_dow','f_doi','f_block','f_taxi','f_trip','f_maltow','f_eet','f_flaps','f_fkt','f_capt'];
+
+// ---- storage helpers: use the browser's own localStorage so this works standalone
+// (window.storage only exists inside Claude's chat preview, not once this file is
+// downloaded and opened directly in Safari or added to the Home Screen) ----
+function storageGet(key){
+  try{
+    const v = localStorage.getItem(key);
+    return v===null ? null : {value:v};
+  }catch(e){ return null; }
+}
+function storageSet(key, value){
+  try{ localStorage.setItem(key, value); return true; }
+  catch(e){ console.error('storage error', e); return false; }
+}
+
+function loadAll(){
+  const res = storageGet('fleet-db');
+  if(res && res.value){
+    try{ FLEET = JSON.parse(res.value); }catch(e){ FLEET = JSON.parse(JSON.stringify(FLEET_DEFAULT)); }
+  } else {
+    FLEET = JSON.parse(JSON.stringify(FLEET_DEFAULT));
+    storageSet('fleet-db', JSON.stringify(FLEET));
+  }
+
+  const res2 = storageGet('fuel-settings');
+  if(res2 && res2.value){
+    try{
+      const s = JSON.parse(res2.value);
+      wingCap = s.wingCap ?? wingCap;
+      ngBurn = s.ngBurn ?? ngBurn;
+      maxBurn = s.maxBurn ?? maxBurn;
+    }catch(e){}
+  }
+  document.getElementById('set_wingcap').value = wingCap;
+  document.getElementById('set_ngburn').value = ngBurn;
+  document.getElementById('set_maxburn').value = maxBurn;
+
+  populateRegSelect();
+  renderFleetChips();
+
+  // restore last trip draft, if any
+  const res4 = storageGet('trip-draft');
+  if(res4 && res4.value){
+    try{
+      const draft = JSON.parse(res4.value);
+      FORM_FIELDS.forEach(id=>{
+        if(draft[id]!==undefined && document.getElementById(id)) document.getElementById(id).value = draft[id];
+      });
+    }catch(e){}
+  }
+
+  onKeyInput();
+}
+
+function saveFleet(){
+  storageSet('fleet-db', JSON.stringify(FLEET));
+}
+
+function onSettingsChange(){
+  wingCap = parseFloat(document.getElementById('set_wingcap').value) || wingCap;
+  ngBurn = parseFloat(document.getElementById('set_ngburn').value) || ngBurn;
+  maxBurn = parseFloat(document.getElementById('set_maxburn').value) || maxBurn;
+  storageSet('fuel-settings', JSON.stringify({wingCap, ngBurn, maxBurn}));
+  render();
+}
+
+function scheduleSaveDraft(){
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(()=>saveDraftNow(false), 800);
+}
+
+function saveDraftNow(showConfirm){
+  const draft = {};
+  FORM_FIELDS.forEach(id=>{ const el = document.getElementById(id); if(el) draft[id] = el.value; });
+  const status = document.getElementById('saveStatus');
+  const ok = storageSet('trip-draft', JSON.stringify(draft));
+  if(showConfirm){
+    status.textContent = ok ? 'Saved ✓' : 'Save failed';
+    setTimeout(()=>{status.textContent='';}, 2000);
+  }
+}
+
+function shareOrPrint(){
+  // Always open the native print dialog directly and immediately — this must stay
+  // synchronous (no awaits before it) so iOS Safari doesn't block it as a delayed
+  // pop-up. From the print preview you can still tap the share icon to send as
+  // Mail, Messages, save to Files (PDF), AirPrint, etc.
+  window.print();
+}
+
+function buildFullShareText(){
+  const t = id => (document.getElementById(id).textContent || '-').trim();
+  return [
+    'CORENDON AIRLINES — TRIP INFO',
+    `Flight No: ${t('o_flight')}`,
+    `Registration: ${t('o_reg')}`,
+    `From / To: ${t('o_fromto')}`,
+    `Date: ${t('o_date')}`,
+    `Crew Version: ${t('o_crew')}`,
+    `Pantry: ${t('o_pantry')}`,
+    `DOW / DOI: ${t('o_dowdoi')}`,
+    `Block Fuel / Taxi Fuel: ${t('o_blocktaxi')}`,
+    `T/O Fuel: ${t('o_tofuel')}`,
+    `Trip Fuel: ${t('o_trip')}`,
+    `MALTOW: ${t('o_maltow')}`,
+    `EET / Endurance: ${t('o_eetend')}`,
+    `Flaps: ${t('o_flaps')}`,
+    `FKT: ${t('o_fkt')}`,
+    `Capt. Name & Surname: ${t('o_capt')}`,
+    `Tank 2 / Center Tank / Tank 1: ${t('o_t2')} / ${t('o_tc')} / ${t('o_t1')}`
+  ].join('\n');
+}
+
+function fmtHHMM(hours){
+  if(hours===null || hours===undefined || isNaN(hours) || hours < 0) return '';
+  let h = Math.floor(hours);
+  let m = Math.round((hours - h) * 60);
+  if(m === 60){ m = 0; h += 1; }
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+function populateRegSelect(){
+  const sel = document.getElementById('f_reg');
+  const current = sel.value;
+  sel.innerHTML = '';
+  Object.keys(FLEET).sort().forEach(reg=>{
+    const opt = document.createElement('option'); opt.value = reg; opt.textContent = reg;
+    sel.appendChild(opt);
+  });
+  if(current && FLEET[current]) sel.value = current;
+}
+
+function renderFleetChips(){
+  const el = document.getElementById('fleetChips');
+  const regs = Object.keys(FLEET).sort();
+  document.getElementById('dbCount').textContent = regs.length + ' registrations';
+  el.innerHTML = regs.map(r=>{
+    let rows = 0;
+    Object.values(FLEET[r].pantry||{}).forEach(p=>Object.values(p||{}).forEach(c=>{if(c) rows++;}));
+    return `<span class="chip">${r} · ${rows} rows</span>`;
+  }).join('');
+}
+
+function lookup(reg, pantry, cockpit, cabin){
+  const node = FLEET[reg] && FLEET[reg].pantry && FLEET[reg].pantry[pantry] && FLEET[reg].pantry[pantry][cockpit];
+  if(!node || !node.dow || !node.doi) return null;
+  const dow = node.dow[cabin], doi = node.doi[cabin];
+  if(dow===null||dow===undefined||doi===null||doi===undefined) return null;
+  return {dow, doi};
+}
+
+function onKeyInput(){
+  const reg = document.getElementById('f_reg').value;
+  const pantry = document.getElementById('f_pantry').value;
+  const cockpit = document.getElementById('f_cockpit').value;
+  const cabin = parseInt(document.getElementById('f_cabin').value);
+  const dowEl = document.getElementById('f_dow');
+  const doiEl = document.getElementById('f_doi');
+  const dowBadge = document.getElementById('dowBadge');
+  const doiBadge = document.getElementById('doiBadge');
+  const saveBox = document.getElementById('saveNewAcftBox');
+
+  const hit = lookup(reg, pantry, cockpit, cabin);
+  if(hit){
+    dowEl.value = hit.dow; doiEl.value = hit.doi;
+    dowEl.readOnly = true; doiEl.readOnly = true;
+    dowBadge.style.display='inline-block'; doiBadge.style.display='inline-block';
+    saveBox.style.display='none';
+  } else {
+    dowEl.readOnly = false; doiEl.readOnly = false;
+    dowBadge.style.display='none'; doiBadge.style.display='none';
+    saveBox.style.display = reg ? 'flex' : 'none';
+  }
+  render();
+}
+
+function saveCurrentCell(){
+  const reg = document.getElementById('f_reg').value;
+  const pantry = document.getElementById('f_pantry').value;
+  const cockpit = document.getElementById('f_cockpit').value;
+  const cabin = parseInt(document.getElementById('f_cabin').value);
+  const dow = parseFloat(document.getElementById('f_dow').value);
+  const doi = parseFloat(document.getElementById('f_doi').value);
+  if(!reg || isNaN(dow) || isNaN(doi)){ alert('Enter DOW and DOI first'); return; }
+  if(!FLEET[reg]) FLEET[reg] = {pantry:{A:{},B:{},E:{}}};
+  if(!FLEET[reg].pantry[pantry]) FLEET[reg].pantry[pantry] = {};
+  if(!FLEET[reg].pantry[pantry][cockpit] || !FLEET[reg].pantry[pantry][cockpit].dow){
+    FLEET[reg].pantry[pantry][cockpit] = {dow:Array(7).fill(null), doi:Array(7).fill(null)};
+  }
+  FLEET[reg].pantry[pantry][cockpit].dow[cabin] = dow;
+  FLEET[reg].pantry[pantry][cockpit].doi[cabin] = doi;
+  saveFleet();
+  populateRegSelect();
+  renderFleetChips();
+  onKeyInput();
+}
+
+function loadRowIntoEditor(){
+  const reg = document.getElementById('db_reg').value.trim().toUpperCase();
+  const pantry = document.getElementById('db_pantry').value;
+  const cockpit = document.getElementById('db_cockpit').value;
+  const node = FLEET[reg] && FLEET[reg].pantry && FLEET[reg].pantry[pantry] && FLEET[reg].pantry[pantry][cockpit];
+  if(node && node.dow){
+    document.getElementById('db_dow').value = node.dow.map(v=>v===null?'':v).join(',');
+    document.getElementById('db_doi').value = node.doi.map(v=>v===null?'':v).join(',');
+  } else {
+    document.getElementById('db_dow').value = '';
+    document.getElementById('db_doi').value = '';
+    alert('No existing row for that combination — enter 7 values and Save to create it.');
+  }
+}
+
+function saveRow(){
+  const reg = document.getElementById('db_reg').value.trim().toUpperCase();
+  const pantry = document.getElementById('db_pantry').value;
+  const cockpit = document.getElementById('db_cockpit').value;
+  const dowArr = document.getElementById('db_dow').value.split(',').map(s=>s.trim()).map(s=>s===''?null:parseFloat(s));
+  const doiArr = document.getElementById('db_doi').value.split(',').map(s=>s.trim()).map(s=>s===''?null:parseFloat(s));
+  if(!reg){ alert('Enter a registration'); return; }
+  if(dowArr.length!==7 || doiArr.length!==7){ alert('Please provide exactly 7 comma-separated values for DOW and 7 for DOI (Cabin Attendant 0 through 6)'); return; }
+  if(!FLEET[reg]) FLEET[reg] = {pantry:{A:{},B:{},E:{}}};
+  if(!FLEET[reg].pantry[pantry]) FLEET[reg].pantry[pantry] = {};
+  FLEET[reg].pantry[pantry][cockpit] = {dow:dowArr, doi:doiArr};
+  saveFleet();
+  populateRegSelect();
+  renderFleetChips();
+  onKeyInput();
+  alert('Row saved.');
+}
+
+function deleteRow(){
+  const reg = document.getElementById('db_reg').value.trim().toUpperCase();
+  const pantry = document.getElementById('db_pantry').value;
+  const cockpit = document.getElementById('db_cockpit').value;
+  if(FLEET[reg] && FLEET[reg].pantry && FLEET[reg].pantry[pantry]){
+    delete FLEET[reg].pantry[pantry][cockpit];
+  }
+  saveFleet();
+  populateRegSelect();
+  renderFleetChips();
+  onKeyInput();
+}
+
+function dash(v){ return (v===undefined||v===null||v==='') ? '-' : v; }
+
+function render(){
+  const g = id => document.getElementById(id).value;
+  const flight = g('f_flight').toUpperCase();
+  const reg = g('f_reg').toUpperCase();
+  const from = g('f_from').toUpperCase();
+  const to = g('f_to').toUpperCase();
+  const dateRaw = g('f_date');
+  const date = dateRaw ? dateRaw.split('-').reverse().join(' / ') : '';
+  const pantry = g('f_pantry');
+  const cockpit = g('f_cockpit');
+  const cabin = g('f_cabin');
+  const dow = g('f_dow');
+  const doi = g('f_doi');
+  const block = parseFloat(g('f_block'));
+  const taxi = parseFloat(g('f_taxi'));
+  const trip = g('f_trip');
+  const maltow = g('f_maltow');
+  const eet = g('f_eet');
+  const end = g('f_end');
+  const flaps = g('f_flaps');
+  const fkt = g('f_fkt');
+  const capt = g('f_capt').toUpperCase();
+
+  let tofuel = '';
+  if(!isNaN(block) && !isNaN(taxi)){ tofuel = block - taxi; }
+  document.getElementById('f_tofuel').value = tofuel===''?'':tofuel;
+
+  // auto Endurance from T/O Fuel, using burn rate for this aircraft's type (MAX vs NG)
+  let enduranceStr = '';
+  if(tofuel !== '' && !isNaN(tofuel)){
+    const type = (FLEET[reg] && FLEET[reg].type) || '';
+    const rate = type.toUpperCase().includes('MAX') ? maxBurn : ngBurn;
+    enduranceStr = fmtHHMM(tofuel / rate);
+  }
+  document.getElementById('f_end').value = enduranceStr;
+
+  let tank1='-', tank2='-', tankc='-';
+  if(!isNaN(block)){
+    const wing = Math.min(block/2, wingCap);
+    const center = Math.max(block - wing*2, 0);
+    tank1 = Math.round(wing*10)/10;
+    tank2 = Math.round(wing*10)/10;
+    tankc = Math.round(center*10)/10;
+  }
+
+  document.getElementById('o_flight').textContent = dash(flight);
+  document.getElementById('o_reg').textContent = dash(reg);
+  document.getElementById('o_fromto').textContent = (from||to) ? (dash(from)+' / '+dash(to)) : '-';
+  document.getElementById('o_date').textContent = dash(date);
+  document.getElementById('o_crew').textContent = (cockpit && cabin) ? (cockpit+' / '+cabin) : '-';
+  document.getElementById('o_pantry').textContent = dash(pantry);
+  document.getElementById('o_dowdoi').textContent = (dow||doi) ? (dash(dow)+' / '+dash(doi)) : '-';
+  document.getElementById('o_blocktaxi').textContent = (!isNaN(block)||!isNaN(taxi)) ? (dash(isNaN(block)?'':block)+' / '+dash(isNaN(taxi)?'':taxi)) : '-';
+  document.getElementById('o_tofuel').textContent = dash(tofuel);
+  document.getElementById('o_trip').textContent = dash(trip);
+  document.getElementById('o_maltow').textContent = dash(maltow);
+  document.getElementById('o_eetend').textContent = (eet||end) ? (dash(eet)+' / '+dash(end)) : '-';
+  document.getElementById('o_flaps').textContent = dash(flaps);
+  document.getElementById('o_fkt').textContent = fkt!=='' ? (fkt+' KG') : '-';
+  document.getElementById('o_capt').textContent = dash(capt);
+
+  document.getElementById('o2_date').textContent = dash(date);
+  document.getElementById('o2_flight').textContent = dash(flight);
+  document.getElementById('o2_reg').textContent = dash(reg);
+  document.getElementById('o2_fromto').textContent = (from||to) ? (dash(from)+'  '+dash(to)) : '-';
+  document.getElementById('o_t1').textContent = tank1;
+  document.getElementById('o_t2').textContent = tank2;
+  document.getElementById('o_tc').textContent = tankc;
+  document.getElementById('o_block2').textContent = isNaN(block)?'-':block;
+
+  scheduleSaveDraft();
+}
+
+loadAll();
+</script>
+</body>
+</html>
