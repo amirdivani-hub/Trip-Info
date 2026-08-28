@@ -23,6 +23,28 @@
     --red:#c31e2c;
     --blue:#123f8f;
   }
+  @media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --ink: #f2f4f7;
+    --muted: #aab2bf;
+    --line: #2a2f3a;
+    --accent: #66c7e8;
+    --accent-dark: #8bd8f0;
+    --paper: #222833;
+    --red: #ff6b6b;
+    --blue: #7aa7ff;
+  }
+
+  input,
+  select,
+  textarea {
+    background: #11151b;
+    color: #f2f4f7;
+    border-color: #343b47;
+  }
+}
   *{box-sizing:border-box;-webkit-user-select:auto;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,"Trebuchet MS",Segoe UI,Arial,sans-serif;
