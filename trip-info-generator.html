@@ -8,12 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Trip Info">
-<link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#0f6e9e">
-
-<link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=">
 <style>
   :root{
     --bg:#eef2f5;
@@ -201,21 +196,21 @@
       </div>
 
       <div class="row2">
+        <div><label>Trip Fuel (kg)</label><input id="f_trip" type="number" oninput="render()"></div>
         <div><label>Block Fuel (kg)</label><input id="f_block" type="number" oninput="render()"></div>
-        <div><label>Taxi Fuel (kg)</label><input id="f_taxi" type="number" oninput="render()"></div>
       </div>
       <div class="row2">
+        <div><label>Taxi Fuel (kg)</label><input id="f_taxi" type="number" oninput="render()"></div>
         <div><label>T/O Fuel (kg) <span class="badge badge-auto">AUTO = Block − Taxi</span></label>
           <input id="f_tofuel" readonly></div>
-        <div><label>Trip Fuel (kg)</label><input id="f_trip" type="number" oninput="render()"></div>
       </div>
 
       <label>MALTOW (kg)</label>
       <input id="f_maltow" type="number" oninput="render()">
       <div class="row2">
         <div><label>EET (hh:mm)</label><input id="f_eet" placeholder="02:46" oninput="render()"></div>
-        <div><label>Endurance (hh:mm) <span class="badge badge-auto">AUTO</span></label>
-          <input id="f_end" readonly></div>
+        <div><label>Endurance (hh:mm)</label>
+          <input id="f_end" placeholder="03:50" oninput="render()"></div>
       </div>
       <div class="row2">
         <div>
@@ -235,17 +230,6 @@
         <span id="saveStatus" class="hint" style="margin-top:0;"></span>
       </div>
       <p class="hint">Your entries are also saved automatically a moment after you stop typing, so nothing is lost if you leave the app.</p>
-
-      <details>
-        <summary>Fuel & Endurance Settings</summary>
-        <label>Max fuel per wing tank (kg)</label>
-        <input id="set_wingcap" type="number" oninput="onSettingsChange()">
-        <div class="row2">
-          <div><label>NG (737-800) burn rate (kg/h)</label><input id="set_ngburn" type="number" oninput="onSettingsChange()"></div>
-          <div><label>MAX (737-8) burn rate (kg/h)</label><input id="set_maxburn" type="number" oninput="onSettingsChange()"></div>
-        </div>
-        <p class="hint">Endurance = T/O Fuel ÷ burn rate for the selected aircraft's type (NG or MAX, based on the Registration's fleet entry). Defaults are calibrated to a real Corendon 737-800 trip (9524 kg T/O fuel → 03:50). Adjust if your own figures differ.</p>
-      </details>
 
     </div>
   </div>
@@ -491,13 +475,11 @@ const FLEET_DEFAULT = {
 };
 
 let FLEET = {};
-let wingCap = 3900;
-let ngBurn = 2485;   // kg/h, calibrated to a real 737-800 trip (9524kg T/O fuel -> 03:50)
-let maxBurn = 2137;  // kg/h, estimated ~14% more efficient than NG (adjust if you have real MAX data)
+const wingCap = 3900; // kg — Tank1/Tank2 fill equally up to this, remainder goes to Center Tank
 let draftTimer = null;
 
 const FORM_FIELDS = ['f_flight','f_reg','f_date','f_from','f_to','f_pantry','f_cockpit','f_cabin',
-  'f_dow','f_doi','f_block','f_taxi','f_trip','f_maltow','f_eet','f_flaps','f_fkt','f_capt'];
+  'f_dow','f_doi','f_block','f_taxi','f_trip','f_maltow','f_eet','f_end','f_flaps','f_fkt','f_capt'];
 
 // ---- storage helpers: use the browser's own localStorage so this works standalone
 // (window.storage only exists inside Claude's chat preview, not once this file is
@@ -531,19 +513,6 @@ function loadAll(){
   });
   if(!res || changed) storageSet('fleet-db', JSON.stringify(FLEET));
 
-  const res2 = storageGet('fuel-settings');
-  if(res2 && res2.value){
-    try{
-      const s = JSON.parse(res2.value);
-      wingCap = s.wingCap ?? wingCap;
-      ngBurn = s.ngBurn ?? ngBurn;
-      maxBurn = s.maxBurn ?? maxBurn;
-    }catch(e){}
-  }
-  document.getElementById('set_wingcap').value = wingCap;
-  document.getElementById('set_ngburn').value = ngBurn;
-  document.getElementById('set_maxburn').value = maxBurn;
-
   populateRegSelect();
   renderFleetChips();
 
@@ -563,14 +532,6 @@ function loadAll(){
 
 function saveFleet(){
   storageSet('fleet-db', JSON.stringify(FLEET));
-}
-
-function onSettingsChange(){
-  wingCap = parseFloat(document.getElementById('set_wingcap').value) || wingCap;
-  ngBurn = parseFloat(document.getElementById('set_ngburn').value) || ngBurn;
-  maxBurn = parseFloat(document.getElementById('set_maxburn').value) || maxBurn;
-  storageSet('fuel-settings', JSON.stringify({wingCap, ngBurn, maxBurn}));
-  render();
 }
 
 function scheduleSaveDraft(){
@@ -618,14 +579,6 @@ function buildFullShareText(){
     `Capt. Name & Surname: ${t('o_capt')}`,
     `Tank 2 / Center Tank / Tank 1: ${t('o_t2')} / ${t('o_tc')} / ${t('o_t1')}`
   ].join('\n');
-}
-
-function fmtHHMM(hours){
-  if(hours===null || hours===undefined || isNaN(hours) || hours < 0) return '';
-  let h = Math.floor(hours);
-  let m = Math.round((hours - h) * 60);
-  if(m === 60){ m = 0; h += 1; }
-  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
 }
 
 function populateRegSelect(){
@@ -779,15 +732,6 @@ function render(){
   if(!isNaN(block) && !isNaN(taxi)){ tofuel = block - taxi; }
   document.getElementById('f_tofuel').value = tofuel===''?'':tofuel;
 
-  // auto Endurance from T/O Fuel, using burn rate for this aircraft's type (MAX vs NG)
-  let enduranceStr = '';
-  if(tofuel !== '' && !isNaN(tofuel)){
-    const type = (FLEET[reg] && FLEET[reg].type) || '';
-    const rate = type.toUpperCase().includes('MAX') ? maxBurn : ngBurn;
-    enduranceStr = fmtHHMM(tofuel / rate);
-  }
-  document.getElementById('f_end').value = enduranceStr;
-
   let tank1='-', tank2='-', tankc='-';
   if(!isNaN(block)){
     const wing = Math.min(block/2, wingCap);
@@ -827,14 +771,5 @@ function render(){
 
 loadAll();
 </script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./service-worker.js')
-      .catch(function (error) {
-        console.error('Service Worker registration failed:', error);
-      });
-  });
-}
-</script></body>
+</body>
 </html>
