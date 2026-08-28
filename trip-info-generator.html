@@ -38,12 +38,25 @@
   }
 
   input,
-  select,
-  textarea {
-    background: #11151b;
-    color: #f2f4f7;
-    border-color: #343b47;
-  }
+select,
+textarea {
+  background: #11151b !important;
+  color: #f2f4f7 !important;
+  border-color: #343b47 !important;
+  -webkit-text-fill-color: #f2f4f7;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #7f8793 !important;
+  -webkit-text-fill-color: #7f8793;
+  opacity: 1;
+}
+
+select option {
+  background: #11151b;
+  color: #f2f4f7;
+}
 }
   *{box-sizing:border-box;-webkit-user-select:auto;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
