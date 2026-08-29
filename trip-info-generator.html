@@ -273,8 +273,9 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-ghost btn-sm" onclick="sendWhatsApp('occ')">📲 Send to OCC</button>
         <button class="btn-ghost btn-sm" onclick="sendWhatsApp('groundops')">📲 Send to Ground Ops</button>
-        <button class="btn-primary btn-sm" onclick="shareCard()">📤 Share (AirDrop / Email…)</button>
+        <button class="btn-primary btn-sm" onclick="shareCard()">📤 Share PDF (WhatsApp / AirDrop / Email…)</button>
       </div>
+      <p class="hint" style="width:100%;margin-top:6px;">"Send to OCC/Ground Ops" opens a chat with just the message text — WhatsApp's own rules don't allow a link to attach a file. Use "Share PDF" to send the actual Trip Info as a file (you pick WhatsApp, Mail, AirDrop, etc. and the chat).</p>
     </div>
 
     <div id="shareCapture">
@@ -350,6 +351,8 @@
 </div>
 
 <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ---------- factory fleet data (from AHM 560 DOW/DOI tables) ----------
 const FLEET_DEFAULT = {
@@ -667,22 +670,65 @@ function sendWhatsApp(target){
 
 async function shareCard(){
   const msg = buildFullShareText();
-  if(navigator.share){
-    try{
-      await navigator.share({title:'Corendon Trip Info', text: msg});
-    }catch(e){
-      if(e && e.name !== 'AbortError'){
-        alert('Sharing did not complete: ' + e.message);
-      }
-    }
-    return;
+
+  if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
+    // PDF libraries didn't load (e.g. no internet, or a sandboxed chat preview) — fall back to text-only share
+    return shareTextOnly(msg);
   }
+
+  let pdfBlob;
   try{
-    await navigator.clipboard.writeText(msg);
-    alert('Sharing isn\'t available in this view, so the Trip Info was copied to your clipboard instead.\n\nTip: open this app in Safari (not a chat preview) for the full AirDrop/Email share menu.');
-  }catch(e2){
-    alert('Sharing isn\'t supported in this view. Please open this app in Safari to use Share.');
+    const el = document.getElementById('shareCapture');
+    const canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2});
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit:'mm', format:'a5' });
+    const imgData = canvas.toDataURL('image/png');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgProps = pdf.getImageProperties(imgData);
+    const ratio = imgProps.height / imgProps.width;
+    let w = pageWidth - 10;
+    let h = w * ratio;
+    if(h > pageHeight - 10){ h = pageHeight - 10; w = h / ratio; }
+    const x = (pageWidth - w) / 2;
+    pdf.addImage(imgData, 'PNG', x, 5, w, h);
+    pdfBlob = pdf.output('blob');
+  }catch(e){
+    console.error('PDF generation failed', e);
+    return shareTextOnly(msg);
   }
+
+  const file = new File([pdfBlob], 'trip-info.pdf', {type:'application/pdf'});
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:'Corendon Trip Info', text: msg});
+      return;
+    }catch(e){
+      if(e && e.name !== 'AbortError'){ alert('Sharing did not complete: ' + e.message); }
+      return;
+    }
+  }
+
+  // Can't attach a file via share here — offer a direct download of the PDF instead
+  const url = URL.createObjectURL(pdfBlob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'trip-info.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 10000);
+}
+
+function shareTextOnly(msg){
+  if(navigator.share){
+    return navigator.share({title:'Corendon Trip Info', text: msg}).catch(e=>{
+      if(e && e.name !== 'AbortError'){ alert('Sharing did not complete: ' + e.message); }
+    });
+  }
+  return navigator.clipboard.writeText(msg).then(()=>{
+    alert('Sharing isn\'t available in this view, so the Trip Info was copied to your clipboard instead.\n\nTip: open this app in Safari (not a chat preview) for the full AirDrop/Email share menu.');
+  }).catch(()=>{
+    alert('Sharing isn\'t supported in this view. Please open this app in Safari to use Share.');
+  });
 }
 
 function buildFullShareText(){
@@ -1025,7 +1071,7 @@ function parseAndFillFromText(rawText){
 
   if(m = flat.match(/CAPT\.?\s*NAME\s*(?:&|AND)?\s*SURNAME\s*:?\s*([A-Z.\s]{3,25})/i)){
     if(setVal('f_capt', m[1].trim())) filled.push('Captain Name');
-  } else if(m = flat.match(/COMMANDER\s*:?\s*([A-Z]{2,4})\b/i)){
+  } else if(m = flat.match(/(?:COMMANDER|CAPTAIN|PIC|CPT)\.?\s*:?\s*[-]?\s*([A-Z]{2,4})\b/i)){
     const code = m[1].trim().toUpperCase();
     const fullName = CAPTAIN_CODES[code];
     const value = fullName ? formatCaptainName(fullName) : code;
