@@ -996,6 +996,10 @@ function parseAndFillFromText(rawText){
     if(setVal('f_flight', m[1].toUpperCase())) filled.push('Flight No');
   } else if(m = flat.match(/\b([A-Z]{2,3}\s?\d{3,5})\b.*?NONSTOP/i)){
     if(setVal('f_flight', m[1].toUpperCase())) filled.push('Flight No');
+  } else if(m = flat.match(/\bCAI\s?\d{3,5}\b/i)){
+    // fallback: Corendon flights are always "CAI####" — catches it even if the
+    // "PLAN ####" or "FLIGHT NO" label itself got garbled by OCR
+    if(setVal('f_flight', m[0].toUpperCase().replace(/\s+/,' '))) filled.push('Flight No');
   }
 
   if(m = flat.match(/\bTC-?([A-Z]{2,3})\b/i)){
@@ -1016,9 +1020,15 @@ function parseAndFillFromText(rawText){
     if(setVal('f_to', m[2].toUpperCase())) filled.push('To');
   }
 
-  if(m = flat.match(/\b(\d{2})[\/\-.](\d{2})[\/\-.](\d{2,4})\b/)){
-    let [, d, mo, y] = m;
-    if(y.length===2) y = '20'+y;
+  // Date: prefer a full 4-digit-year date (e.g. "28/08/2026") over a 2-digit-year one
+  // (e.g. "28/08/26") when both are present — a 2-digit year is more easily misread by OCR
+  // (a smudged "26" becoming "20" produces a silently wrong-but-valid-looking date).
+  if(m = flat.match(/\b(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})\b/)){
+    const [, d, mo, y] = m;
+    if(setVal('f_date', `${y}-${mo}-${d}`)) filled.push('Date');
+  } else if(m = flat.match(/\b(\d{2})[\/\-.](\d{2})[\/\-.](\d{2})\b/)){
+    const [, d, mo] = m;
+    const y = '20'+m[3];
     if(setVal('f_date', `${y}-${mo}-${d}`)) filled.push('Date');
   }
 
