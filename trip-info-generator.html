@@ -182,13 +182,13 @@
       </div>
       <div id="ocrStatus" class="hint" style="margin-top:-6px;margin-bottom:10px;"></div>
       <div class="row3">
-        <div><label>Flight No</label><input id="f_flight" placeholder="CAI 5052" oninput="render()"></div>
+        <div><label>Flight No</label><input id="f_flight" placeholder="" oninput="render()"></div>
         <div><label>Registration</label><select id="f_reg" onchange="onKeyInput()"></select></div>
         <div><label>Date</label><input id="f_date" type="date" oninput="render()"></div>
       </div>
       <div class="row2">
-        <div><label>From</label><input id="f_from" placeholder="LTAI" style="text-transform:uppercase" oninput="render()"></div>
-        <div><label>To</label><input id="f_to" placeholder="LOWI" style="text-transform:uppercase" oninput="render()"></div>
+        <div><label>From</label><input id="f_from" placeholder="" style="text-transform:uppercase" oninput="render()"></div>
+        <div><label>To</label><input id="f_to" placeholder="" style="text-transform:uppercase" oninput="render()"></div>
       </div>
       <div class="actions" style="margin-top:0;margin-bottom:10px;">
         <button class="btn-ghost btn-sm" onclick="swapFromTo()">⇄ Swap From / To</button>
@@ -229,21 +229,21 @@
       </div>
 
       <div class="row2">
-        <div><label>Trip Fuel (kg)</label><input id="f_trip" type="number" oninput="render()"></div>
-        <div><label>Block Fuel (kg)</label><input id="f_block" type="number" oninput="render()"></div>
+        <div><label>Trip Fuel (kg)</label><input id="f_trip" type="number" placeholder="KG" oninput="render()"></div>
+        <div><label>Block Fuel (kg)</label><input id="f_block" type="number" placeholder="KG" oninput="render()"></div>
       </div>
       <div class="row2">
-        <div><label>Taxi Fuel (kg)</label><input id="f_taxi" type="number" oninput="render()"></div>
+        <div><label>Taxi Fuel (kg)</label><input id="f_taxi" type="number" placeholder="KG" oninput="render()"></div>
         <div><label>T/O Fuel (kg) <span class="badge badge-auto">AUTO = Block − Taxi</span></label>
           <input id="f_tofuel" readonly></div>
       </div>
 
       <label>MALTOW (kg)</label>
-      <input id="f_maltow" type="number" oninput="render()">
+      <input id="f_maltow" type="number" placeholder="KG" oninput="render()">
       <div class="row2">
-        <div><label>EET (hh:mm)</label><input id="f_eet" placeholder="02:46" oninput="render()"></div>
+        <div><label>EET (hh:mm)</label><input id="f_eet" placeholder="00:00" oninput="render()"></div>
         <div><label>Endurance (hh:mm)</label>
-          <input id="f_end" placeholder="03:50" oninput="render()"></div>
+          <input id="f_end" placeholder="00:00" oninput="render()"></div>
       </div>
       <div class="row2">
         <div>
@@ -253,10 +253,10 @@
             <option value="10°">10°</option>
           </select>
         </div>
-        <div><label>FKT (kg)</label><input id="f_fkt" type="number" value="0" oninput="render()"></div>
+        <div><label>FKT (kg)</label><input id="f_fkt" type="number" placeholder="KG" oninput="render()"></div>
       </div>
       <label>Captain Name & Surname</label>
-      <input id="f_capt" placeholder="A.DERELI" style="text-transform:uppercase" oninput="render()">
+      <input id="f_capt" placeholder="" style="text-transform:uppercase" oninput="render()">
 
       <div class="actions">
         <button class="btn-primary btn-sm" onclick="saveDraftNow(true)">💾 Save</button>
@@ -513,6 +513,49 @@ const FLEET_DEFAULT = {
 let FLEET = {};
 const wingCap = 3900; // kg — Tank1/Tank2 fill equally up to this, remainder goes to Center Tank
 let draftTimer = null;
+
+// CAI Cockpit Contact List - Captain (Rev. No: 2026-05, 24-06-2026) — 3-letter code -> full name
+const CAPTAIN_CODES = {
+  EBA:"ERHAN BAYRAM", ZBK:"MEHMET ZEKI BIYIK", YER:"YENER ERLER", PRE:"PEYVENT RUŞEN ERKAN",
+  EBO:"ERDİNÇ BORAN", HIK:"HİKMET EMRULLAH ÖZGÜN", SYA:"SERDAR YAVUZARSLAN", GCO:"GÜRKAN COŞKUN",
+  MHR:"MAHİR ÇAKMAK", KRY:"VELİ KORAY KÜTÜK", YUC:"YÜCEL CEYLAN", NLA:"NENAD LALOVIC",
+  HKB:"HÜSEYİN KAAN BEZİRCİOĞLU", BER:"BERK ERTEMEL", BGZ:"BURAK GEZER", PMA:"PREDRAG MANDIC",
+  SLS:"SLOBODAN SULOVIC", NAR:"NADİR ARAS", JGL:"JAVIER GUAL", MST:"MIROSLAV STEPANOVIC",
+  DLV:"ONUR DİLAVER", AUL:"AHMET ÜLKEN", ZGO:"ZEKAİ GÖL", GDE:"GÜNGÖR DEMİRKOL",
+  ERK:"ERDAL KAYA", VSA:"ABDULVAHAP ŞATIR", HSU:"HÜSEYİN SÜRMELİ", DTO:"DENİZ TOKMAK",
+  AYL:"ABDULLAH YILDIRIM", AFI:"AYKUT FİLİK", GPA:"GIUSEPPE PANNUNZIO", FEM:"FRANK EMMERMANN",
+  EFC:"EFE CAN KARAÇAY", SOB:"SÜLEYMAN ÖZBAKIR", HKN:"HAKAN AKAN", ALT:"ALPER TUĞLU",
+  EKB:"EKBER AKBULUT", TSH:"TOLGA ŞAHİN", MCE:"METİN ÇEVİK", BTI:"BERKANT TİRYAKİ",
+  EGU:"ALİ ERDEM GÜNAL", HIS:"HALİL İBRAHİM SOYDİNÇ", TUZ:"ALİ İHSAN TUZLU", IKI:"İLYAS KINACI",
+  EUL:"ERGİ ULUEREN", KYA:"HÜSEYİN KAYA", DSO:"DOĞAN SONAY", AKS:"FATİH AKSOY",
+  SBE:"SELÇUK BEKTAŞ", MAY:"MUZAFFER AFŞİN YELOK", EKA:"ERMAN KALKAN", CCS:"CAN ÇETİNSAYA",
+  KKI:"KENAN KIRIKÇI", NUA:"BATUHAN NURETTİN AKIN", TPO:"TURHAN POYRAZ", PWE:"PETER WEGROSTEK",
+  KRP:"ILIA KARPENKO", ADE:"ALPER DERELI", IKU:"ANIL İLYAS KURTEL", BDA:"BURAK DAĞTAŞOĞLU",
+  OTE:"ÖZGÜ TEKOĞUL", OBA:"ÖZKAN BAYAV", AUI:"ABİDİN UĞUR İŞLER", ACC:"AHMET CAN CURA",
+  DPI:"DEHA PİŞİRİCİ", CKA:"ÇAĞAN KARADOĞAN", ESA:"ESER AYDIN", YTE:"YAĞIZ TEZEL",
+  NDO:"NURİ DOĞANER", TAK:"TANER KAYA", FBA:"FIRAT BALCI", MEB:"MEHMET KÜRŞAD BİÇİCİ",
+  TIG:"TAYFUN ILGAZ GÜLBUNAR", JKV:"SASA JOKOVIC", LOM:"ALTANKHUYAG LOMBO", YUR:"EMRE YURCI",
+  AER:"ALİ ERCAN", OZK:"MEHMET ALİ ÖZKISACIK", AYA:"AYBARS AYHAN", BIO:"BİLAL ÖZTÜRK",
+  MHA:"METEHAN ALAÇAM", VOS:"VOLKAN ÖZSEYHAN", IVU:"İSMAİL VURAL", BOC:"LUIGI BOCCONI"
+};
+
+function turkishUpper(s){
+  return s
+    .replace(/ı/g,'I').replace(/İ/g,'I')
+    .replace(/ş/g,'S').replace(/Ş/g,'S')
+    .replace(/ğ/g,'G').replace(/Ğ/g,'G')
+    .replace(/ü/g,'U').replace(/Ü/g,'U')
+    .replace(/ö/g,'O').replace(/Ö/g,'O')
+    .replace(/ç/g,'C').replace(/Ç/g,'C')
+    .toUpperCase();
+}
+
+function formatCaptainName(fullName){
+  const words = fullName.trim().split(/\s+/);
+  const first = words[0];
+  const last = words[words.length-1];
+  return turkishUpper(first.charAt(0)) + '.' + turkishUpper(last);
+}
 
 const FORM_FIELDS = ['f_flight','f_reg','f_date','f_from','f_to','f_pantry','f_cockpit','f_cabin',
   'f_dow','f_doi','f_block','f_taxi','f_trip','f_maltow','f_eet','f_end','f_flaps','f_fkt','f_capt'];
@@ -984,7 +1027,10 @@ function parseAndFillFromText(rawText){
   if(m = flat.match(/CAPT\.?\s*NAME\s*(?:&|AND)?\s*SURNAME\s*:?\s*([A-Z.\s]{3,25})/i)){
     if(setVal('f_capt', m[1].trim())) filled.push('Captain Name');
   } else if(m = flat.match(/COMMANDER\s*:?\s*([A-Z]{2,4})\b/i)){
-    if(setVal('f_capt', m[1].trim())) filled.push('Captain Name');
+    const code = m[1].trim().toUpperCase();
+    const fullName = CAPTAIN_CODES[code];
+    const value = fullName ? formatCaptainName(fullName) : code;
+    if(setVal('f_capt', value)) filled.push('Captain Name');
   }
 
   onKeyInput();
