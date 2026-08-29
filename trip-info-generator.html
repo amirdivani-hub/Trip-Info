@@ -172,6 +172,10 @@
     <!-- Trip form panel -->
     <div class="panel">
       <h2>Flight Data</h2>
+
+      <input type="file" id="ocr_file" accept="image/*" capture="environment" style="display:none" onchange="handleOcrFile(event)">
+      <button class="btn-ghost" style="width:100%;margin-bottom:10px;" onclick="document.getElementById('ocr_file').click()">📷 Scan a document photo</button>
+      <div id="ocrStatus" class="hint" style="margin-top:-6px;margin-bottom:10px;"></div>
       <div class="row3">
         <div><label>Flight No</label><input id="f_flight" placeholder="CAI 5052" oninput="render()"></div>
         <div><label>Registration</label><select id="f_reg" onchange="onKeyInput()"></select></div>
@@ -336,6 +340,7 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 // ---------- factory fleet data (from AHM 560 DOW/DOI tables) ----------
 const FLEET_DEFAULT = {
@@ -788,6 +793,133 @@ function render(){
   document.getElementById('o_block2').textContent = isNaN(block)?'-':block;
 
   scheduleSaveDraft();
+}
+
+async function handleOcrFile(event){
+  const file = event.target.files && event.target.files[0];
+  event.target.value = ''; // allow re-selecting the same file next time
+  if(!file) return;
+  const status = document.getElementById('ocrStatus');
+  if(typeof Tesseract === 'undefined'){
+    status.textContent = '⚠️ The photo-reading feature needs an internet connection and only works on the real website — not inside a chat preview. Please open amirdivani-hub.github.io/Trip-Info/trip-info-generator.html directly and try again.';
+    return;
+  }
+  status.textContent = 'Reading photo… this can take 10–30 seconds.';
+  try{
+    const { data } = await Tesseract.recognize(file, 'eng');
+    const filled = parseAndFillFromText(data.text || '');
+    if(filled.length){
+      status.textContent = 'Filled from photo: ' + filled.join(', ') + '. Please double-check every value before using it.';
+    } else {
+      status.textContent = 'Could not confidently read any fields from that photo. Try a clearer, straight-on shot, or enter the data by hand.';
+    }
+  }catch(e){
+    console.error('OCR error', e);
+    status.textContent = 'Could not read that photo (' + e.message + '). Please try again or enter the data by hand.';
+  }
+}
+
+function parseAndFillFromText(rawText){
+  const text = rawText.replace(/\r/g,'');
+  const flat = text.replace(/\n/g,' ');
+  const filled = [];
+  const setVal = (id, value)=>{
+    const el = document.getElementById(id);
+    if(el && value!==undefined && value!==null && value!==''){ el.value = value; return true; }
+    return false;
+  };
+  const num = s => s ? s.replace(/[, ]/g,'') : s;
+
+  let m;
+
+  // Flight No: "FLIGHT NO CAI 5052" (Trip Info card) or "PLAN 3658 CAI4142" (OFP header)
+  if(m = flat.match(/FLIGHT\s*NO\.?\s*:?\s*([A-Z]{2,3}\s?\d{3,5})/i)){
+    if(setVal('f_flight', m[1].toUpperCase())) filled.push('Flight No');
+  } else if(m = flat.match(/PLAN\s+\d+\s+([A-Z]{2,4}\d{3,5})/i)){
+    if(setVal('f_flight', m[1].toUpperCase())) filled.push('Flight No');
+  } else if(m = flat.match(/\b([A-Z]{2,3}\s?\d{3,5})\b.*?NONSTOP/i)){
+    if(setVal('f_flight', m[1].toUpperCase())) filled.push('Flight No');
+  }
+
+  if(m = flat.match(/\bTC-?([A-Z]{2,3})\b/i)){
+    if(setVal('f_reg', 'TC-'+m[1].toUpperCase())) filled.push('Registration');
+  }
+
+  // From/To: the most reliable source is the OFP header line "PLAN #### CAIxxxx EGPF TO LTAI ...".
+  // Note: a "TRIP EGPF/GLA"-style row is NOT a route pair — it's the destination airport written as
+  // ICAO/IATA (e.g. EGPF=ICAO, GLA=IATA for the same Glasgow airport) — so that pattern is not used here.
+  if(m = flat.match(/PLAN\s+\d+\s+[A-Z0-9]+\s+([A-Z]{4})\s+TO\s+([A-Z]{4})\b/i)){
+    if(setVal('f_from', m[1].toUpperCase())) filled.push('From');
+    if(setVal('f_to', m[2].toUpperCase())) filled.push('To');
+  } else if(m = flat.match(/FROM\s*\/?\s*TO\s*:?\s*([A-Z]{3,4})\s*\/\s*([A-Z]{3,4})\b/i)){
+    if(setVal('f_from', m[1].toUpperCase())) filled.push('From');
+    if(setVal('f_to', m[2].toUpperCase())) filled.push('To');
+  } else if(m = flat.match(/\b([A-Z]{4})\s+TO\s+([A-Z]{4})\b/i)){
+    if(setVal('f_from', m[1].toUpperCase())) filled.push('From');
+    if(setVal('f_to', m[2].toUpperCase())) filled.push('To');
+  }
+
+  if(m = flat.match(/\b(\d{2})[\/\-.](\d{2})[\/\-.](\d{2,4})\b/)){
+    let [, d, mo, y] = m;
+    if(y.length===2) y = '20'+y;
+    if(setVal('f_date', `${y}-${mo}-${d}`)) filled.push('Date');
+  }
+
+  if(m = flat.match(/PANTRY(?:\s*CODE)?\s*:?\s*([ABE])\b/i)){
+    if(setVal('f_pantry', m[1].toUpperCase())) filled.push('Pantry Code');
+  }
+
+  if(m = flat.match(/CREW\s*VERSION\s*:?\s*(\d)\s*\/\s*(\d)/i)){
+    if(setVal('f_cockpit', m[1])) filled.push('Cockpit Crew');
+    if(setVal('f_cabin', m[2])) filled.push('Cabin Attendant No');
+  }
+
+  // Trip Fuel + EET: an OFP "TRIP EGPF/GLA 12912 0442" row gives both the trip fuel (kg)
+  // and the trip time (HHMM, no colon) in one line — use it for both fields if present.
+  let tripRow = flat.match(/\bTRIP\s+[A-Z]{3,4}\s*\/\s*[A-Z]{3,4}\s+([\d,]{3,7})\s+(\d{3,4})\b/i);
+  if(tripRow){
+    if(setVal('f_trip', num(tripRow[1]))) filled.push('Trip Fuel');
+    const t = tripRow[2].padStart(4,'0');
+    if(setVal('f_eet', t.slice(0,2)+':'+t.slice(2))) filled.push('EET');
+  } else if(m = flat.match(/TRIP\s*FUEL\s*:?\s*([\d,]{3,7})/i)){
+    if(setVal('f_trip', num(m[1]))) filled.push('Trip Fuel');
+  }
+
+  if(m = flat.match(/BLOCK\s*FUEL\s*:?\s*([\d,]{3,7})/i)){
+    if(setVal('f_block', num(m[1]))) filled.push('Block Fuel');
+  }
+  if(m = flat.match(/TAXI(?:\s*FUEL)?\s*:?\s*([\d,]{2,7})/i)){
+    if(setVal('f_taxi', num(m[1]))) filled.push('Taxi Fuel');
+  }
+
+  if(m = flat.match(/MALTOW\s*:?\s*([\d,]{3,7})/i)){
+    if(setVal('f_maltow', num(m[1]))) filled.push('MALTOW');
+  }
+
+  if(!tripRow && (m = flat.match(/EET\s*:?\s*(\d{1,2}:\d{2})/i))){
+    if(setVal('f_eet', m[1])) filled.push('EET');
+  }
+  if(m = flat.match(/ENDURANCE\s*:?\s*(\d{1,2}:\d{2})/i)){
+    if(setVal('f_end', m[1])) filled.push('Endurance');
+  }
+
+  if(m = flat.match(/FLAPS\s*:?\s*(\d{1,2})/i)){
+    const v = m[1]+'°';
+    if(v==='5°' || v==='10°'){ if(setVal('f_flaps', v)) filled.push('Flaps'); }
+  }
+
+  if(m = flat.match(/FKT\s*:?\s*([\d.]{1,6})/i)){
+    if(setVal('f_fkt', m[1])) filled.push('FKT');
+  }
+
+  if(m = flat.match(/CAPT\.?\s*NAME\s*(?:&|AND)?\s*SURNAME\s*:?\s*([A-Z.\s]{3,25})/i)){
+    if(setVal('f_capt', m[1].trim())) filled.push('Captain Name');
+  } else if(m = flat.match(/COMMANDER\s*:?\s*([A-Z]{2,4})\b/i)){
+    if(setVal('f_capt', m[1].trim())) filled.push('Captain Name');
+  }
+
+  onKeyInput();
+  return filled;
 }
 
 loadAll();
