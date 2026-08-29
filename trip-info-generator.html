@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Trip Info">
-<link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
-<link rel="manifest" href="./manifest.webmanifest">
+<meta name="color-scheme" content="light dark">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=">
 <style>
   :root{
     --bg:#eef2f5;
@@ -23,41 +23,22 @@
     --red:#c31e2c;
     --blue:#123f8f;
   }
-  @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1115;
-    --panel: #171a21;
-    --ink: #f2f4f7;
-    --muted: #aab2bf;
-    --line: #2a2f3a;
-    --accent: #66c7e8;
-    --accent-dark: #8bd8f0;
-    --paper: #222833;
-    --red: #ff6b6b;
-    --blue: #7aa7ff;
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1115;
+      --panel:#1b1e24;
+      --ink:#e8edf2;
+      --muted:#98a3ad;
+      --line:#2b3038;
+      --accent:#3aa0d6;
+      --accent-dark:#79c4ee;
+      --paper:#151a21;
+      --red:#ff6b6f;
+      --blue:#6fa8ff;
+    }
+    input,select,textarea{background:#242a32 !important;color:var(--ink) !important;}
+    input[readonly]{background:#1a2733 !important;}
   }
-
-  input,
-select,
-textarea {
-  background: #11151b !important;
-  color: #f2f4f7 !important;
-  border-color: #343b47 !important;
-  -webkit-text-fill-color: #f2f4f7;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #7f8793 !important;
-  -webkit-text-fill-color: #7f8793;
-  opacity: 1;
-}
-
-select option {
-  background: #11151b;
-  color: #f2f4f7;
-}
-}
   *{box-sizing:border-box;-webkit-user-select:auto;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,"Trebuchet MS",Segoe UI,Arial,sans-serif;
@@ -114,25 +95,29 @@ select option {
     border-top:2px solid var(--red);padding:5px 0 3px;}
   .doc table{width:100%;border-collapse:collapse;}
   .doc table td{border:1px solid var(--red);padding:6px 10px;font-size:13px;}
-  .doc table td.k{width:46%;color:var(--red);font-weight:700;background:#fff;}
+  .doc table td.k{width:46%;color:var(--red);font-weight:700;background:var(--panel);}
   .doc table td.v{color:var(--blue);font-weight:800;text-align:center;letter-spacing:.5px;}
   .doc .foot{display:flex;justify-content:space-between;font-size:9px;color:#444;padding:4px 10px 8px;}
   .doc2{border-top:2px solid var(--red);}
   .doc2 .hdr td{border:1px solid var(--red);padding:6px 10px;font-size:13px;}
-  .doc2 .hdr td.k{color:var(--red);font-weight:700;width:32%;background:#fff;}
+  .doc2 .hdr td.k{color:var(--red);font-weight:700;width:32%;background:var(--panel);}
   .doc2 .hdr td.v{color:var(--blue);font-weight:800;text-align:center;}
   .plane{padding:4px 10px 4px;}
   .tanks{display:flex;justify-content:space-between;align-items:flex-end;padding:0 6px;margin-top:2px;}
-  .tank{border:2px solid var(--red);border-radius:3px;background:#fff;text-align:center;padding:8px 4px;width:31%;}
+  .tank{border:2px solid var(--red);border-radius:3px;background:var(--panel);text-align:center;padding:8px 4px;width:31%;}
   .tank .val{color:var(--blue);font-weight:900;font-size:18px;}
   .tank .lbl{color:var(--red);font-size:9px;font-weight:700;margin-top:2px;}
-  .blockfuel{border:2px solid var(--red);border-radius:3px;background:#fff;text-align:center;
+  .blockfuel{border:2px solid var(--red);border-radius:3px;background:var(--panel);text-align:center;
     margin:12px 30px 4px;padding:8px;}
   .blockfuel .val{color:var(--blue);font-weight:900;font-size:20px;}
   .blockfuel .lbl{color:var(--red);font-size:10px;font-weight:700;margin-top:2px;letter-spacing:1px;}
 
   @media print{
     @page{ size: A5; margin: 8mm; }
+    :root{
+      --bg:#eef2f5; --panel:#ffffff; --ink:#1c2b3a; --muted:#6b7c8c; --line:#dde4ea;
+      --accent:#0f6e9e; --accent-dark:#0a4f74; --paper:#eaf6fb; --red:#c31e2c; --blue:#123f8f;
+    }
     body{background:#fff;padding:0;}
     .grid,.toolbar,h1,.sub{display:none !important;}
     .cardwrap{border:none;padding:0;}
@@ -279,7 +264,7 @@ select option {
       </div>
     </div>
 
-    <div id="shareCapture" style="background:#fff;">
+    <div id="shareCapture">
     <div class="doc" id="doc1">
       <div class="brand">
         <div class="logo">
@@ -310,7 +295,7 @@ select option {
 
     <div class="doc doc2">
       <table class="hdr">
-        <tr><td class="k">DATE: <span id="o2_date" style="color:var(--blue);font-weight:800;"></span></td><td class="k" style="text-align:center;">FLIGHT NO: <span class="v" id="o2_flight" style="color:var(--blue)"></span></td></tr>
+        <tr><td class="k">DATE: <span id="o2_date"></span></td><td class="k" style="text-align:center;">FLIGHT NO: <span class="v" id="o2_flight" style="color:var(--blue)"></span></td></tr>
         <tr><td class="k">AIRPLANE REG</td><td class="v" id="o2_reg">-</td></tr>
         <tr><td class="k">FROM / TO</td><td class="v" id="o2_fromto">-</td></tr>
       </table>
@@ -319,7 +304,7 @@ select option {
           <!-- tall narrow tail fin -->
           <path d="M208.6 2 L210 45 L207 45 Z" fill="none" stroke="#c31e2c" stroke-width="1.4"/>
           <!-- round fuselage -->
-          <circle cx="208.6" cy="63" r="19" fill="#fff" stroke="#c31e2c" stroke-width="1.4"/>
+          <circle cx="208.6" cy="63" r="19" fill="var(--panel)" stroke="#c31e2c" stroke-width="1.4"/>
           <!-- windshield, 3 panes -->
           <path d="M199 54 L220 54 L218 60.5 L201 60.5 Z" fill="none" stroke="#c31e2c" stroke-width="1"/>
           <line x1="206" y1="54" x2="206" y2="60.3" stroke="#c31e2c" stroke-width="0.9"/>
@@ -511,7 +496,7 @@ const FLEET_DEFAULT = {
 };
 
 let FLEET = {};
-const wingCap = 3850; // kg — Tank1/Tank2 fill equally up to this, remainder goes to Center Tank
+const wingCap = 3900; // kg — Tank1/Tank2 fill equally up to this, remainder goes to Center Tank
 let draftTimer = null;
 
 const FORM_FIELDS = ['f_flight','f_reg','f_date','f_from','f_to','f_pantry','f_cockpit','f_cabin',
