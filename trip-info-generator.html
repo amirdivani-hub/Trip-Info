@@ -1037,6 +1037,12 @@ function parseAndFillFromText(rawText){
 }
 
 loadAll();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.error('Service worker registration failed', e));
+  });
+}
 </script>
 </body>
 </html>
