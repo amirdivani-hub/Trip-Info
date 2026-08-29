@@ -59,6 +59,7 @@
   textarea{resize:vertical;min-height:44px;}
   input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-color:var(--accent);}
   input[readonly]{background:#eef8ff;color:var(--blue);font-weight:700;border-color:#bcdcf2;}
+  input.field-invalid{color:var(--red) !important;font-weight:800;border-color:var(--red) !important;}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
   .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
@@ -173,8 +174,12 @@
     <div class="panel">
       <h2>Flight Data</h2>
 
-      <input type="file" id="ocr_file" accept="image/*" capture="environment" style="display:none" onchange="handleOcrFile(event)">
-      <button class="btn-ghost" style="width:100%;margin-bottom:10px;" onclick="document.getElementById('ocr_file').click()">📷 Scan a document photo</button>
+      <input type="file" id="ocr_file_camera" accept="image/*" capture="environment" style="display:none" onchange="handleOcrFile(event)">
+      <input type="file" id="ocr_file_upload" accept="image/*" style="display:none" onchange="handleOcrFile(event)">
+      <div class="row2" style="margin-bottom:10px;">
+        <button class="btn-ghost" onclick="document.getElementById('ocr_file_camera').click()">📷 Take Photo</button>
+        <button class="btn-ghost" onclick="document.getElementById('ocr_file_upload').click()">🖼️ Upload Photo</button>
+      </div>
       <div id="ocrStatus" class="hint" style="margin-top:-6px;margin-bottom:10px;"></div>
       <div class="row3">
         <div><label>Flight No</label><input id="f_flight" placeholder="CAI 5052" oninput="render()"></div>
@@ -184,6 +189,9 @@
       <div class="row2">
         <div><label>From</label><input id="f_from" placeholder="LTAI" style="text-transform:uppercase" oninput="render()"></div>
         <div><label>To</label><input id="f_to" placeholder="LOWI" style="text-transform:uppercase" oninput="render()"></div>
+      </div>
+      <div class="actions" style="margin-top:0;margin-bottom:10px;">
+        <button class="btn-ghost btn-sm" onclick="swapFromTo()">⇄ Swap From / To</button>
       </div>
 
       <div class="row3">
@@ -264,7 +272,9 @@
     <div class="toolbar">
       <h2 style="margin:0;font-size:14px;color:var(--accent-dark);">Trip Info Output</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn-primary btn-sm" onclick="shareOrPrint()">Print / Export PDF</button>
+        <button class="btn-ghost btn-sm" onclick="sendWhatsApp('occ')">📲 Send to OCC</button>
+        <button class="btn-ghost btn-sm" onclick="sendWhatsApp('groundops')">📲 Send to Ground Ops</button>
+        <button class="btn-primary btn-sm" onclick="shareCard()">📤 Share (AirDrop / Email…)</button>
       </div>
     </div>
 
@@ -553,7 +563,23 @@ function loadAll(){
     }catch(e){}
   }
 
+  // default Date to today if nothing was restored — still fully editable by hand
+  const dateEl = document.getElementById('f_date');
+  if(dateEl && !dateEl.value){
+    const d = new Date();
+    dateEl.value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
   onKeyInput();
+}
+
+function swapFromTo(){
+  const fromEl = document.getElementById('f_from');
+  const toEl = document.getElementById('f_to');
+  const tmp = fromEl.value;
+  fromEl.value = toEl.value;
+  toEl.value = tmp;
+  render();
 }
 
 function saveFleet(){
@@ -576,12 +602,45 @@ function saveDraftNow(showConfirm){
   }
 }
 
-function shareOrPrint(){
-  // Always open the native print dialog directly and immediately — this must stay
-  // synchronous (no awaits before it) so iOS Safari doesn't block it as a delayed
-  // pop-up. From the print preview you can still tap the share icon to send as
-  // Mail, Messages, save to Files (PDF), AirPrint, etc.
-  window.print();
+const WHATSAPP_CONTACTS = { occ:'905494120078', groundops:'905494120036' };
+
+function buildWhatsAppMessage(){
+  const flight = document.getElementById('f_flight').value.toUpperCase();
+  const reg = document.getElementById('f_reg').value.toUpperCase();
+  const dateRaw = document.getElementById('f_date').value;
+  const date = dateRaw ? dateRaw.split('-').reverse().join('/') : '';
+  let msg = "Merhabalar size zahmet bunu HAVAŞ'a gönderebilir misiniz.";
+  if(flight || reg || date){
+    msg += "\n\n" + [flight, reg, date].filter(Boolean).join(' - ');
+  }
+  return msg;
+}
+
+function sendWhatsApp(target){
+  const msg = buildWhatsAppMessage();
+  const number = WHATSAPP_CONTACTS[target] || '';
+  const url = `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+async function shareCard(){
+  const msg = buildFullShareText();
+  if(navigator.share){
+    try{
+      await navigator.share({title:'Corendon Trip Info', text: msg});
+    }catch(e){
+      if(e && e.name !== 'AbortError'){
+        alert('Sharing did not complete: ' + e.message);
+      }
+    }
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(msg);
+    alert('Sharing isn\'t available in this view, so the Trip Info was copied to your clipboard instead.\n\nTip: open this app in Safari (not a chat preview) for the full AirDrop/Email share menu.');
+  }catch(e2){
+    alert('Sharing isn\'t supported in this view. Please open this app in Safari to use Share.');
+  }
 }
 
 function buildFullShareText(){
@@ -757,6 +816,16 @@ function render(){
   let tofuel = '';
   if(!isNaN(block) && !isNaN(taxi)){ tofuel = block - taxi; }
   document.getElementById('f_tofuel').value = tofuel===''?'':tofuel;
+
+  // sanity checks: highlight red when numbers don't logically add up, otherwise normal color
+  const taxiEl = document.getElementById('f_taxi');
+  const blockEl = document.getElementById('f_block');
+  const tripEl = document.getElementById('f_trip');
+  const tofuelBad = (tofuel !== '' && tofuel < 0);
+  taxiEl.classList.toggle('field-invalid', tofuelBad);
+  blockEl.classList.toggle('field-invalid', tofuelBad);
+  const tripBad = (!isNaN(trip) && tofuel !== '' && !isNaN(tofuel) && parseFloat(trip) > tofuel);
+  tripEl.classList.toggle('field-invalid', tripBad);
 
   let tank1='-', tank2='-', tankc='-';
   if(!isNaN(block)){
