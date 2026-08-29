@@ -271,11 +271,9 @@
     <div class="toolbar">
       <h2 style="margin:0;font-size:14px;color:var(--accent-dark);">Trip Info Output</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn-ghost btn-sm" onclick="sendWhatsApp('occ')">📲 Send to OCC</button>
-        <button class="btn-ghost btn-sm" onclick="sendWhatsApp('groundops')">📲 Send to Ground Ops</button>
         <button class="btn-primary btn-sm" onclick="shareCard()">📤 Share PDF (WhatsApp / AirDrop / Email…)</button>
       </div>
-      <p class="hint" style="width:100%;margin-top:6px;">"Send to OCC/Ground Ops" opens a chat with just the message text — WhatsApp's own rules don't allow a link to attach a file. Use "Share PDF" to send the actual Trip Info as a file (you pick WhatsApp, Mail, AirDrop, etc. and the chat).</p>
+      <p class="hint" style="width:100%;margin-top:6px;">Sends the actual Trip Info as a file — you pick WhatsApp, Mail, AirDrop, etc. and the chat (OCC, Ground Ops, or anyone else).</p>
     </div>
 
     <div id="shareCapture">
@@ -647,27 +645,6 @@ function saveDraftNow(showConfirm){
   }
 }
 
-const WHATSAPP_CONTACTS = { occ:'905494120078', groundops:'905494120036' };
-
-function buildWhatsAppMessage(){
-  const flight = document.getElementById('f_flight').value.toUpperCase();
-  const reg = document.getElementById('f_reg').value.toUpperCase();
-  const dateRaw = document.getElementById('f_date').value;
-  const date = dateRaw ? dateRaw.split('-').reverse().join('/') : '';
-  let msg = "Merhabalar size zahmet bunu HAVAŞ'a gönderebilir misiniz.";
-  if(flight || reg || date){
-    msg += "\n\n" + [flight, reg, date].filter(Boolean).join(' - ');
-  }
-  return msg;
-}
-
-function sendWhatsApp(target){
-  const msg = buildWhatsAppMessage();
-  const number = WHATSAPP_CONTACTS[target] || '';
-  const url = `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-}
-
 async function shareCard(){
   const msg = buildFullShareText();
 
@@ -734,23 +711,9 @@ function shareTextOnly(msg){
 function buildFullShareText(){
   const t = id => (document.getElementById(id).textContent || '-').trim();
   return [
-    'CORENDON AIRLINES — TRIP INFO',
     `Flight No: ${t('o_flight')}`,
     `Registration: ${t('o_reg')}`,
-    `From / To: ${t('o_fromto')}`,
-    `Date: ${t('o_date')}`,
-    `Crew Version: ${t('o_crew')}`,
-    `Pantry: ${t('o_pantry')}`,
-    `DOW / DOI: ${t('o_dowdoi')}`,
-    `Block Fuel / Taxi Fuel: ${t('o_blocktaxi')}`,
-    `T/O Fuel: ${t('o_tofuel')}`,
-    `Trip Fuel: ${t('o_trip')}`,
-    `MALTOW: ${t('o_maltow')}`,
-    `EET / Endurance: ${t('o_eetend')}`,
-    `Flaps: ${t('o_flaps')}`,
-    `FKT: ${t('o_fkt')}`,
-    `Capt. Name & Surname: ${t('o_capt')}`,
-    `Tank 2 / Center Tank / Tank 1: ${t('o_t2')} / ${t('o_tc')} / ${t('o_t1')}`
+    `From / To: ${t('o_fromto')}`
   ].join('\n');
 }
 
